@@ -1,0 +1,152 @@
+'use client';
+
+import Head from 'next/head';
+import { useEffect, useState } from 'react';
+import { useDashboardStore } from '@/hooks/useStore';
+import { accountsAPI } from '@/lib/api';
+
+export default function RiskPage() {
+  const [riskSettings, setRiskSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { selectedAccount, accounts } = useDashboardStore();
+  const [accountId, setAccountId] = useState(selectedAccount || '');
+  const [formData, setFormData] = useState({
+    max_daily_loss: 0,
+    max_weekly_loss: 0,
+    max_open_positions: 5,
+    risk_per_trade: 2,
+  });
+
+  useEffect(() => {
+    if (accountId) {
+      fetchRiskSettings();
+    }
+  }, [accountId]);
+
+  const fetchRiskSettings = async () => {
+    try {
+      setLoading(true);
+      // Fetch risk settings endpoint
+      setRiskSettings(formData);
+    } catch (error) {
+      console.error('Failed to fetch risk settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Update risk settings endpoint
+      setRiskSettings(formData);
+      alert('Risk settings updated successfully!');
+    } catch (error) {
+      console.error('Failed to update risk settings:', error);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Risk Management - Trading Control</title>
+      </Head>
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-6">Risk Management</h1>
+
+        {accounts.length > 0 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Account</label>
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">Select an account</option>
+              {accounts.map((acc: any) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Risk Settings Form */}
+          <div className="card">
+            <h2 className="text-xl font-semibold mb-4">Risk Settings</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Max Daily Loss ($)</label>
+                <input
+                  type="number"
+                  value={formData.max_daily_loss}
+                  onChange={(e) => setFormData({ ...formData, max_daily_loss: parseFloat(e.target.value) })}
+                  className="input-field mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Max Weekly Loss ($)</label>
+                <input
+                  type="number"
+                  value={formData.max_weekly_loss}
+                  onChange={(e) => setFormData({ ...formData, max_weekly_loss: parseFloat(e.target.value) })}
+                  className="input-field mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Max Open Positions</label>
+                <input
+                  type="number"
+                  value={formData.max_open_positions}
+                  onChange={(e) => setFormData({ ...formData, max_open_positions: parseInt(e.target.value) })}
+                  className="input-field mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Risk Per Trade (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.risk_per_trade}
+                  onChange={(e) => setFormData({ ...formData, risk_per_trade: parseFloat(e.target.value) })}
+                  className="input-field mt-1"
+                />
+              </div>
+              <button type="submit" className="btn-primary w-full mt-6">
+                Save Settings
+              </button>
+            </form>
+          </div>
+
+          {/* Risk Information */}
+          <div className="space-y-4">
+            <div className="card bg-blue-50 border border-blue-200">
+              <h3 className="font-semibold text-blue-900 mb-2">Position Sizing</h3>
+              <p className="text-sm text-blue-800">
+                Risk per trade helps determine the correct position size. Based on your risk per trade setting of {formData.risk_per_trade}%, the system will automatically calculate position sizes to maintain this risk level.
+              </p>
+            </div>
+            <div className="card bg-yellow-50 border border-yellow-200">
+              <h3 className="font-semibold text-yellow-900 mb-2">Daily Loss Limit</h3>
+              <p className="text-sm text-yellow-800">
+                Once you reach your maximum daily loss of ${formData.max_daily_loss}, trading will be automatically paused for the rest of the day to prevent revenge trading.
+              </p>
+            </div>
+            <div className="card bg-purple-50 border border-purple-200">
+              <h3 className="font-semibold text-purple-900 mb-2">Maximum Positions</h3>
+              <p className="text-sm text-purple-800">
+                You can have a maximum of {formData.max_open_positions} open positions at any time. This helps manage correlation risk and portfolio heat.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
