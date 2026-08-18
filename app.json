@@ -1,0 +1,41 @@
+{
+  "name": "trading-control-platform",
+  "description": "Professional trading account management platform",
+  "repository": "https://github.com/Abdihakim851/trading-control-platform",
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    },
+    "JWT_SECRET": {
+      "description": "JWT secret key (generate a random string)",
+      "generator": "secret"
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret API key",
+      "required": false
+    },
+    "STRIPE_PUBLISHABLE_KEY": {
+      "description": "Stripe publishable key",
+      "required": false
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL database URL",
+      "required": false
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    },
+    {
+      "plan": "heroku-redis:premium-0"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
