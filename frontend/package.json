@@ -1,13 +1,12 @@
 {
-  "name": "trading-platform-frontend",
-  "version": "1.0.0",
+  "name": "trading-control-frontend",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint": "next lint"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -16,7 +15,6 @@
     "typescript": "^5.2.2",
     "zustand": "^4.4.1",
     "axios": "^1.5.0",
-    "stripe": "^13.6.0",
     "@stripe/react-stripe-js": "^2.4.0",
     "@stripe/stripe-js": "^1.46.0",
     "recharts": "^2.10.0",
