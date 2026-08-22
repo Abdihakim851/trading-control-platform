@@ -95,14 +95,17 @@ export default function Home() {
                   <p className="text-gray-600 mb-4">Accounts: {plan.accounts}</p>
                   <ul className="space-y-2 mb-6">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="text-gray-600">✓ {feature}</li>
+                      <li key={i} className="text-gray-600">{feature}</li>
                     ))}
                   </ul>
-                  <button className={`w-full py-2 rounded transition ${
-                    idx === 2 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-blue-600 text-blue-600 hover:bg-blue-50'
-                  }`}>
+                  <Link
+                    href="/register"
+                    className={`block text-center w-full py-2 rounded transition ${
+                      idx === 2 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
                     Choose Plan
-                  </button>
+                  </Link>
                 </div>
               ))}
             </div>

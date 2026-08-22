@@ -2,15 +2,15 @@
 
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import { accountsAPI } from '@/lib/api';
+import { supabase, TradingAccount } from '@/lib/supabase';
 import { useDashboardStore } from '@/hooks/useStore';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function AccountsPage() {
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', broker: '', broker_account_id: '', account_type: '' });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const { setAccounts: setStoreAccounts } = useDashboardStore();
 
   useEffect(() => {
@@ -20,11 +20,15 @@ export default function AccountsPage() {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await accountsAPI.getAccounts();
-      setAccounts(res.data);
-      setStoreAccounts(res.data);
-    } catch (error) {
-      console.error('Failed to fetch accounts:', error);
+      const { data, error } = await supabase
+        .from('trading_accounts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAccounts(data || []);
+      setStoreAccounts(data || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load accounts');
     } finally {
       setLoading(false);
     }
@@ -32,29 +36,40 @@ export default function AccountsPage() {
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
-      await accountsAPI.createAccount(formData);
+      const { data, error } = await supabase
+        .from('trading_accounts')
+        .insert({
+          name: formData.name,
+          broker: formData.broker,
+          broker_account_id: formData.broker_account_id,
+          account_type: formData.account_type,
+        })
+        .select()
+        .single();
+      if (error) throw error;
       setFormData({ name: '', broker: '', broker_account_id: '', account_type: '' });
       setShowForm(false);
       fetchAccounts();
-    } catch (error) {
-      console.error('Failed to create account:', error);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create account');
     }
   };
 
   const handleDeleteAccount = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this account?')) {
-      try {
-        await accountsAPI.deleteAccount(id);
-        fetchAccounts();
-      } catch (error) {
-        console.error('Failed to delete account:', error);
-      }
+    if (!window.confirm('Are you sure you want to delete this account? All trades for this account will also be deleted.')) return;
+    try {
+      const { error } = await supabase.from('trading_accounts').delete().eq('id', id);
+      if (error) throw error;
+      fetchAccounts();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete account');
     }
   };
 
   if (loading) {
-    return <div className="p-6 text-center">Loading...</div>;
+    return <div className="p-6 text-center text-gray-500">Loading...</div>;
   }
 
   return (
@@ -63,6 +78,9 @@ export default function AccountsPage() {
         <title>Accounts - Trading Control</title>
       </Head>
       <div className="p-6">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Trading Accounts</h1>
           <button
@@ -123,25 +141,36 @@ export default function AccountsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((account) => (
-            <div key={account.id} className="card">
-              <h3 className="text-lg font-semibold text-gray-900">{account.name}</h3>
-              <p className="text-gray-600 text-sm mt-2">Broker: {account.broker}</p>
-              <p className="text-gray-600 text-sm">Type: {account.account_type}</p>
-              <p className="text-2xl font-bold text-green-600 mt-4">${account.balance?.toFixed(2) || '0.00'}</p>
-              <div className="flex gap-2 mt-4">
-                <button className="flex-1 btn-secondary text-sm">View</button>
-                <button
-                  onClick={() => handleDeleteAccount(account.id)}
-                  className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-                >
-                  Delete
-                </button>
+        {accounts.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-gray-500 mb-4">No trading accounts yet.</p>
+            <button onClick={() => setShowForm(true)} className="btn-primary">
+              Add Your First Account
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {accounts.map((account) => (
+              <div key={account.id} className="card">
+                <h3 className="text-lg font-semibold text-gray-900">{account.name}</h3>
+                <p className="text-gray-600 text-sm mt-2">Broker: {account.broker}</p>
+                <p className="text-gray-600 text-sm">Type: {account.account_type}</p>
+                <p className="text-2xl font-bold text-green-600 mt-4">
+                  ${account.balance?.toFixed(2) || '0.00'}
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <button className="flex-1 btn-secondary text-sm">View</button>
+                  <button
+                    onClick={() => handleDeleteAccount(account.id)}
+                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

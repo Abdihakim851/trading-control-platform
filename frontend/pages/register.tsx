@@ -3,8 +3,7 @@
 import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { authAPI } from '@/lib/api';
-import { useAuthStore } from '@/hooks/useStore';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function Register() {
@@ -15,7 +14,6 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { setToken, setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,19 +24,23 @@ export default function Register() {
       return;
     }
 
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await authAPI.register(email, password, name);
-      const { token, userId } = response.data;
-      
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser({ id: userId, email });
-      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      });
+      if (error) throw error;
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -52,7 +54,7 @@ export default function Register() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
           <h1 className="text-3xl font-bold text-center mb-8 text-blue-600">Trading Control</h1>
-          
+
           {error && (
             <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
               {error}
