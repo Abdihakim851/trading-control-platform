@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Control Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        nav a {
+            color: #fff;
+            cursor: pointer;
+            margin-left: 30px;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #00d4ff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            color: #aaa;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #00d4ff;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border-radius: 5px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 2em;
+            color: #00d4ff;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .trades-table th, .trades-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .trades-table th {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+
+        .profit {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .loss {
+            color: #ff3333;
+            font-weight: bold;
+        }
+
+        .error {
+            background: #ff3333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #00ff88;
+            color: black;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">💹 Trading Control</div>
+        <div>
+            <a onclick="showSection('home')">Home</a>
+            <a onclick="showSection('dashboard')" id="dashboardLink" style="display: none;">Dashboard</a>
+            <a onclick="logout()" id="logoutBtn" style="display: none; color: #ff3333;">Logout</a>
+            <a onclick="showSection('login')" id="loginLink">Login</a>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="section active">
+        <div class="hero">
+            <h1>Trading Control Platform</h1>
+            <p>Complete trading analytics and management system</p>
+            <button class="btn" onclick="showSection('login')">Get Started</button>
+        </div>
+    </section>
+
+    <!-- Login Section -->
+    <section id="login" class="section">
+        <div class="container" style="max-width: 400px;">
+            <h2 style="margin-bottom: 30px; text-align: center; color: #00d4ff;">Login</h2>
+            <div id="loginError"></div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Password">
+            </div>
+            <button class="btn" onclick="login()" style="width: 100%; margin-bottom: 20px;">Login</button>
+            <p style="text-align: center; color: #aaa;">Don't have an account? <a onclick="showSection('signup')" style="color: #00d4ff; cursor: pointer;">Sign up</a></p>
+        </div>
+    </section>
+
+    <!-- Signup Section -->
+    <section id="signup" class="section">
+        <div class="container" style="max-width: 400px;">
+            <h2 style="margin-bottom: 30px; text-align: center; color: #00d4ff;">Create Account</h2>
+            <div id="signupError"></div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="signupName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signupEmail" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signupPassword" placeholder="Password">
+            </div>
+            <button class="btn" onclick="signup()" style="width: 100%; margin-bottom: 20px;">Create Account</button>
+            <p style="text-align: center; color: #aaa;">Already have an account? <a onclick="showSection('login')" style="color: #00d4ff; cursor: pointer;">Login</a></p>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="section">
+        <div class="container">
+            <h2 style="margin-bottom: 10px;">Welcome, <span id="userName">User</span>! 👋</h2>
+            <p style="color: #aaa; margin-bottom: 40px;">Your trading dashboard</p>
+
+            <h3 style="color: #00d4ff; margin-bottom: 20px;">📊 Performance Metrics</h3>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div>Total Profit</div>
+                    <div class="kpi-value" id="totalProfit">$0</div>
+                </div>
+                <div class="kpi-card">
+                    <div>Win Rate</div>
+                    <div class="kpi-value" id="winRate">0%</div>
+                </div>
+                <div class="kpi-card">
+                    <div>Total Trades</div>
+                    <div class="kpi-value" id="totalTrades">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div>Profit Factor</div>
+                    <div class="kpi-value" id="profitFactor">0</div>
+                </div>
+            </div>
+
+            <h3 style="color: #00d4ff; margin: 40px 0 20px 0;">➕ Add New Trade</h3>
+            <div style="background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 40px;">
+                <div class="form-group">
+                    <label>Symbol</label>
+                    <input type="text" id="symbol" placeholder="EURUSD">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Entry Price</label>
+                        <input type="number" id="entryPrice" placeholder="1.0850" step="0.0001">
+                    </div>
+                    <div class="form-group">
+                        <label>Exit Price</label>
+                        <input type="number" id="exitPrice" placeholder="1.0890" step="0.0001">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="quantity" placeholder="1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Confidence (%)</label>
+                        <input type="number" id="confidence" placeholder="75" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Setup Type</label>
+                    <input type="text" id="setupType" placeholder="Confluence">
+                </div>
+                <button class="btn" onclick="addTrade()" style="width: 100%;">Add Trade</button>
+            </div>
+
+            <h3 style="color: #00d4ff; margin-bottom: 20px;">📈 Recent Trades</h3>
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>P&L</th>
+                        <th>Setup</th>
+                    </tr>
+                </thead>
+                <tbody id="tradesBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #aaa;">No trades yet</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button class="btn" onclick="logout()" style="background: #ff3333; margin-top: 40px;">Logout</button>
+        </div>
+    </section>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let token = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if (sectionId === 'dashboard') loadDashboard();
+        }
+
+        async function signup() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    token = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    document.getElementById('loginLink').style.display = 'none';
+                    document.getElementById('dashboardLink').style.display = 'inline';
+                    document.getElementById('logoutBtn').style.display = 'inline';
+                    showSection('dashboard');
+                } else {
+                    document.getElementById('signupError').innerHTML = `<div class="error">${data.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('signupError').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    token = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    document.getElementById('loginLink').style.display = 'none';
+                    document.getElementById('dashboardLink').style.display = 'inline';
+                    document.getElementById('logoutBtn').style.display = 'inline';
+                    showSection('dashboard');
+                } else {
+                    document.getElementById('loginError').innerHTML = `<div class="error">${data.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('loginError').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function addTrade() {
+            const symbol = document.getElementById('symbol').value;
+            const entry_price = parseFloat(document.getElementById('entryPrice').value);
+            const exit_price = parseFloat(document.getElementById('exitPrice').value);
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const setup_type = document.getElementById('setupType').value;
+            const confidence = parseInt(document.getElementById('confidence').value);
+
+            if (!symbol || !entry_price || !exit_price || !quantity) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/trades`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ symbol, entry_price, exit_price, quantity, setup_type, confidence })
+                });
+                if (res.ok) {
+                    document.getElementById('symbol').value = '';
+                    document.getElementById('entryPrice').value = '';
+                    document.getElementById('exitPrice').value = '';
+                    document.getElementById('quantity').value = '';
+                    document.getElementById('setupType').value = '';
+                    document.getElementById('confidence').value = '';
+                    loadDashboard();
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        async function loadDashboard() {
+            if (!currentUser) return;
+            document.getElementById('userName').textContent = currentUser.name;
+
+            try {
+                const [tradesRes, analyticsRes] = await Promise.all([
+                    fetch(`${API_URL}/trades`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_URL}/analytics`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                const tradesData = await tradesRes.json();
+                const analyticsData = await analyticsRes.json();
+
+                const { analytics } = analyticsData;
+                document.getElementById('totalProfit').textContent = `$${analytics.totalProfit}`;
+                document.getElementById('winRate').textContent = `${analytics.winRate}%`;
+                document.getElementById('totalTrades').textContent = analytics.totalTrades;
+                document.getElementById('profitFactor').textContent = analytics.profitFactor.toFixed(2);
+
+                const tradesBody = document.getElementById('tradesBody');
+                if (tradesData.trades.length === 0) {
+                    tradesBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #aaa;">No trades yet</td></tr>';
+                } else {
+                    tradesBody.innerHTML = tradesData.trades.map(t => `
+                        <tr>
+                            <td>${t.symbol}</td>
+                            <td>${t.entry_price}</td>
+                            <td>${t.exit_price}</td>
+                            <td class="${t.profit >= 0 ? 'profit' : 'loss'}">$${t.profit.toFixed(2)}</td>
+                            <td>${t.setup_type}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function logout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('loginLink').style.display = 'inline';
+            document.getElementById('dashboardLink').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            showSection('home');
+        }
+
+        window.addEventListener('load', () => {
+            if (token && currentUser) {
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('dashboardLink').style.display = 'inline';
+                document.getElementById('logoutBtn').style.display = 'inline';
+            }
+        });
+    </script>
+</body>
+</html>
