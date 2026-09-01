@@ -1,170 +1,129 @@
+-- Supabase SQL Migration
+-- Create all necessary tables for Trading Control Platform
+
 -- Users table
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    name VARCHAR(255),
-    stripe_customer_id VARCHAR(255),
-    mfa_enabled BOOLEAN DEFAULT FALSE,
-    mfa_secret VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_created_at (created_at)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Trading accounts table
-CREATE TABLE IF NOT EXISTS trading_accounts (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    broker VARCHAR(100) NOT NULL,
-    broker_account_id VARCHAR(255),
-    account_type VARCHAR(50),
-    balance DECIMAL(15,2) DEFAULT 0,
-    status VARCHAR(50) DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_broker (broker),
-    INDEX idx_status (status)
-);
-
--- Broker integrations table
-CREATE TABLE IF NOT EXISTS broker_integrations (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    broker VARCHAR(100) NOT NULL,
-    broker_account_id VARCHAR(255),
-    access_token TEXT,
-    refresh_token TEXT,
-    credentials TEXT,
-    platform VARCHAR(50),
-    status VARCHAR(50) DEFAULT 'connected',
-    last_synced TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_broker (broker)
+-- Connected Accounts (brokers)
+CREATE TABLE connected_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  broker_id VARCHAR(100) NOT NULL,
+  api_key VARCHAR(500) NOT NULL,
+  secret_key VARCHAR(500),
+  status VARCHAR(50) DEFAULT 'active',
+  connected_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, broker_id)
 );
 
 -- Trades table
-CREATE TABLE IF NOT EXISTS trades (
-    id UUID PRIMARY KEY,
-    account_id UUID NOT NULL REFERENCES trading_accounts(id) ON DELETE CASCADE,
-    symbol VARCHAR(20) NOT NULL,
-    direction VARCHAR(10) NOT NULL,
-    entry_price DECIMAL(15,8) NOT NULL,
-    exit_price DECIMAL(15,8),
-    quantity DECIMAL(15,8) NOT NULL,
-    pnl DECIMAL(15,2),
-    pnl_percent DECIMAL(10,4),
-    entry_time TIMESTAMP NOT NULL,
-    exit_time TIMESTAMP,
-    duration INTERVAL,
-    notes TEXT,
-    status VARCHAR(50) DEFAULT 'closed',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_account_id (account_id),
-    INDEX idx_symbol (symbol),
-    INDEX idx_entry_time (entry_time),
-    INDEX idx_status (status)
+CREATE TABLE trades (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  symbol VARCHAR(20) NOT NULL,
+  entry_price DECIMAL(15,2) NOT NULL,
+  exit_price DECIMAL(15,2) NOT NULL,
+  quantity DECIMAL(15,2) NOT NULL,
+  profit DECIMAL(15,2),
+  pnl_percentage DECIMAL(10,2),
+  setup_type VARCHAR(100),
+  notes TEXT,
+  confidence INTEGER,
+  entry_time TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'closed',
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Subscriptions table
-CREATE TABLE IF NOT EXISTS subscriptions (
-    id UUID PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    tier VARCHAR(50) DEFAULT 'free',
-    stripe_id VARCHAR(255),
-    stripe_price_id VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'active',
-    current_period_start TIMESTAMP,
-    current_period_end TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_tier (tier),
-    INDEX idx_status (status)
+-- Chart Markups
+CREATE TABLE chart_markups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  image_url TEXT,
+  chart_data JSONB,
+  analysis JSONB,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Risk management settings table
-CREATE TABLE IF NOT EXISTS risk_settings (
-    id UUID PRIMARY KEY,
-    account_id UUID UNIQUE NOT NULL REFERENCES trading_accounts(id) ON DELETE CASCADE,
-    max_daily_loss DECIMAL(15,2),
-    max_weekly_loss DECIMAL(15,2),
-    max_open_positions INT DEFAULT 5,
-    risk_per_trade DECIMAL(5,2) DEFAULT 2,
-    stop_loss_atr_multiplier DECIMAL(5,2) DEFAULT 2,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_account_id (account_id)
+-- AI Insights
+CREATE TABLE ai_insights (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  insight_type VARCHAR(100),
+  confidence INTEGER,
+  recommendation TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Revenge trading prevention logs
-CREATE TABLE IF NOT EXISTS revenge_trading_logs (
-    id UUID PRIMARY KEY,
-    account_id UUID NOT NULL REFERENCES trading_accounts(id) ON DELETE CASCADE,
-    consecutive_losses INT DEFAULT 0,
-    total_daily_loss DECIMAL(15,2) DEFAULT 0,
-    trading_paused BOOLEAN DEFAULT FALSE,
-    pause_until TIMESTAMP,
-    triggered_reason VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_account_id (account_id),
-    INDEX idx_trading_paused (trading_paused)
+-- Trade Patterns
+CREATE TABLE trade_patterns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  pattern_type VARCHAR(100),
+  description TEXT,
+  success_rate DECIMAL(5,2),
+  trade_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Daily account balance history
-CREATE TABLE IF NOT EXISTS account_balance_history (
-    id UUID PRIMARY KEY,
-    account_id UUID NOT NULL REFERENCES trading_accounts(id) ON DELETE CASCADE,
-    balance DECIMAL(15,2) NOT NULL,
-    equity DECIMAL(15,2),
-    drawdown_percent DECIMAL(10,4),
-    daily_pnl DECIMAL(15,2),
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_account_id (account_id),
-    INDEX idx_recorded_at (recorded_at)
+-- Backtest Results
+CREATE TABLE backtest_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  symbol VARCHAR(20),
+  strategy TEXT,
+  start_date DATE,
+  end_date DATE,
+  initial_capital DECIMAL(15,2),
+  results JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Compliance and audit logs
-CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    action VARCHAR(255) NOT NULL,
-    entity_type VARCHAR(100),
-    entity_id UUID,
-    changes JSONB,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_action (action),
-    INDEX idx_created_at (created_at)
+-- Trading Spaces (community)
+CREATE TABLE trading_spaces (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  is_private BOOLEAN DEFAULT FALSE,
+  member_count INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Payment transactions
-CREATE TABLE IF NOT EXISTS payment_transactions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    stripe_transaction_id VARCHAR(255),
-    amount DECIMAL(15,2) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'USD',
-    status VARCHAR(50) DEFAULT 'pending',
-    description TEXT,
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_stripe_transaction_id (stripe_transaction_id),
-    INDEX idx_status (status)
+-- Community Posts
+CREATE TABLE community_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  space_id UUID NOT NULL REFERENCES trading_spaces(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  trade_data JSONB,
+  likes INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_trades_account_entry ON trades(account_id, entry_time DESC);
-CREATE INDEX IF NOT EXISTS idx_balance_account_recorded ON account_balance_history(account_id, recorded_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_user_created ON audit_logs(user_id, created_at DESC);
+-- Mentorships
+CREATE TABLE mentorships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  mentor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mentee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT,
+  status VARCHAR(50) DEFAULT 'pending',
+  requested_at TIMESTAMP DEFAULT NOW(),
+  accepted_at TIMESTAMP,
+  UNIQUE(mentor_id, mentee_id)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_trades_user_id ON trades(user_id);
+CREATE INDEX idx_trades_entry_time ON trades(entry_time);
+CREATE INDEX idx_chart_markups_user_id ON chart_markups(user_id);
+CREATE INDEX idx_ai_insights_user_id ON ai_insights(user_id);
+CREATE INDEX idx_community_posts_space_id ON community_posts(space_id);
+CREATE INDEX idx_mentorships_mentor_id ON mentorships(mentor_id);
+CREATE INDEX idx_mentorships_mentee_id ON mentorships(mentee_id);
