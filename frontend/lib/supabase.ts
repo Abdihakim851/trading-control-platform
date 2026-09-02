@@ -35,6 +35,17 @@ export type Trade = {
   created_at: string;
 };
 
+export type TradeAnalytics = {
+  total_trades: number;
+  wins: number;
+  losses: number;
+  win_rate: string;
+  total_pnl: number;
+  avg_pnl: number;
+  max_win: number;
+  max_loss: number;
+};
+
 export type RiskSettings = {
   id: string;
   account_id: string;
