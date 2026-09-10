@@ -6,7 +6,7 @@ export default function Home() {
     <>
       <Head>
         <title>Trading Control Platform</title>
-        <meta name="description" content="Manage your trading accounts with risk control and analytics" />
+        <meta name="description" content="Professional trading account management with risk control and analytics" />
       </Head>
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <nav className="bg-white shadow-md sticky top-0 z-50">
